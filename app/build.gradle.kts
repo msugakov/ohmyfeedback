@@ -8,16 +8,35 @@
  */
 
 plugins {
-    // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.8.10"
-
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+
+    // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
+    kotlin("jvm").version("1.8.10")
+    id("io.ktor.plugin").version("2.2.4")
+}
+
+group = "com.github.msugakov"
+version = "1.0-SNAPSHOT"
+
+application {
+    // Define the main class for the application.
+    mainClass.set("com.github.msugakov.ohmyfeedback.AppKt")
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = "com.github.msugakov.ohmyfeedback.AppKt"
+    }
 }
 
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
+}
+
+kotlin {
+    jvmToolchain(19)
 }
 
 dependencies {
@@ -33,9 +52,4 @@ testing {
             useKotlinTest("1.8.10")
         }
     }
-}
-
-application {
-    // Define the main class for the application.
-    mainClass.set("ohmyfeedback.AppKt")
 }
