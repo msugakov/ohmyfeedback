@@ -35,5 +35,7 @@ COPY --from=builder /build/app/build/libs/app-all.jar ./
 # Set user to nobody
 USER 65534:65534
 
+EXPOSE 8080
+
 ENTRYPOINT ["/opt/java/openjdk/bin/java"]
 CMD ["-jar", "/app/app-all.jar"]

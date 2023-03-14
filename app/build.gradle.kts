@@ -1,3 +1,4 @@
+val ktorVersion = "2.2.4"
 
 plugins {
     application
@@ -27,6 +28,10 @@ kotlin {
 }
 
 dependencies {
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+
+    implementation("ch.qos.logback:logback-classic:1.2.11")
 }
 
 testing {
