@@ -86,7 +86,7 @@ After=network.target
 
 [Service]
 Type=exec
-ExecStart=java -jar -Xmx512m -Xms512m -Duser.timezone=UTC /ohmyfeedback/dist/app-all.jar
+ExecStart=java -jar -Xmx512m -Xms512m -Duser.timezone=UTC /ohmyfeedback/dist/app-all.jar --http-port 80
 RestartSec=5
 TimeoutStopSec=20
 Restart=always
@@ -107,6 +107,11 @@ ProtectControlGroups=true
 RestrictRealtime=true
 RestrictSUIDSGID=true
 Environment=TEMP=/ohmyfeedback/var/tmp TMP=/ohmyfeedback/var/tmp
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+# The following should limit listening to only specific ports but for some reason it does not work OOTB.
+#SocketBindAllow=tcp:80
+#SocketBindAllow=tcp:443
+#SocketBindDeny=any
 
 [Install]
 WantedBy=multi-user.target

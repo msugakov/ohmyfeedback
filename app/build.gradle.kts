@@ -31,6 +31,8 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
 
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
+
     implementation("ch.qos.logback:logback-classic:1.2.11")
 }
 

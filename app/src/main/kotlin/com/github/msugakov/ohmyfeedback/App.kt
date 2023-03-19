@@ -12,6 +12,10 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import kotlinx.cli.ArgParser
+import kotlinx.cli.ArgType
+import kotlinx.cli.default
+import kotlinx.cli.required
 import java.util.Date
 
 class App {
@@ -22,16 +26,34 @@ class App {
 }
 
 fun main(args: Array<String>) {
-    embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
+    val parsedArgs = parseArgs(args)
+
+    embeddedServer(Netty, port = parsedArgs.httpPort, host = "0.0.0.0") {
         configureRouting()
     }.start(wait = true)
     println(App().greeting)
 }
 
+data class CliOptions(val httpPort: Int)
+
+fun parseArgs(args: Array<String>): CliOptions {
+    val parser = ArgParser("ohmyfeedback")
+    val httpPort by parser.option(
+        ArgType.Int,
+        shortName = "p",
+        fullName = "http-port",
+        description = "HTTP (insecure) port"
+    ).default(8080)
+
+    parser.parse(args)
+
+    return CliOptions(httpPort = httpPort)
+}
+
 fun Application.configureRouting() {
     routing {
         get("/") {
-            call.respondText("<h1>Hello, Ktor! It's ${Date()}</h1>", ContentType.Text.Html)
+            call.respondText("<h1>Hello, Ktor! It's ${Date()}</h1>\n", ContentType.Text.Html)
         }
         static("/") {
             staticBasePackage = "static"
