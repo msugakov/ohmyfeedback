@@ -1,9 +1,14 @@
 package com.github.msugakov.ohmyfeedback
 
 import io.ktor.http.ContentType
+import io.ktor.network.tls.certificates.buildKeyStore
+import io.ktor.network.tls.certificates.saveToFile
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
+import io.ktor.server.engine.applicationEngineEnvironment
+import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.engine.sslConnector
 import io.ktor.server.http.content.defaultResource
 import io.ktor.server.http.content.resources
 import io.ktor.server.http.content.static
@@ -15,8 +20,9 @@ import io.ktor.server.routing.routing
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
-import kotlinx.cli.required
-import java.util.Date
+import java.io.File
+import java.security.KeyStore
+import java.util.*
 
 class App {
     val greeting: String
@@ -28,13 +34,29 @@ class App {
 fun main(args: Array<String>) {
     val parsedArgs = parseArgs(args)
 
-    embeddedServer(Netty, port = parsedArgs.httpPort, host = "0.0.0.0") {
-        configureRouting()
-    }.start(wait = true)
+    val keyStore = genSelfSignedCert()
+
+    val environment = applicationEngineEnvironment {
+        connector {
+            port = parsedArgs.httpPort
+        }
+        sslConnector(
+            keyStore = keyStore,
+            keyAlias = "sampleAlias",
+            keyStorePassword = { "123456".toCharArray() },
+            privateKeyPassword = { "foobar".toCharArray() }) {
+            port = parsedArgs.httpsPort
+            keyStorePath = File("var/tmp/keystore.jks")
+        }
+
+        module(Application::module)
+    }
+
+    embeddedServer(Netty, environment).start(wait = true)
     println(App().greeting)
 }
 
-data class CliOptions(val httpPort: Int)
+data class CliOptions(val httpPort: Int, val httpsPort: Int)
 
 fun parseArgs(args: Array<String>): CliOptions {
     val parser = ArgParser("ohmyfeedback")
@@ -44,13 +66,32 @@ fun parseArgs(args: Array<String>): CliOptions {
         fullName = "http-port",
         description = "HTTP (insecure) port"
     ).default(8080)
+    val httpsPort by parser.option(
+        ArgType.Int,
+        shortName = "s",
+        fullName = "https-port",
+        description = "HTTPS (TLS) port"
+    ).default(8443)
 
     parser.parse(args)
 
-    return CliOptions(httpPort = httpPort)
+    return CliOptions(httpPort = httpPort, httpsPort = httpsPort)
 }
 
-fun Application.configureRouting() {
+fun genSelfSignedCert(): KeyStore {
+    val keyStoreFile = File("var/tmp/keystore.jks")
+    val keyStore = buildKeyStore {
+        certificate("sampleAlias") {
+            password = "foobar"
+            domains = listOf("127.0.0.1", "0.0.0.0", "localhost", "152.70.58.209")
+        }
+    }
+    keyStore.saveToFile(keyStoreFile, "123456")
+
+    return keyStore
+}
+
+fun Application.module() {
     routing {
         get("/") {
             call.respondText("<h1>Hello, Ktor! It's ${Date()}</h1>\n", ContentType.Text.Html)

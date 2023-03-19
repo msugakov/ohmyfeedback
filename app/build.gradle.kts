@@ -30,6 +30,7 @@ kotlin {
 dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-network-tls-certificates:$ktorVersion")
 
     implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
 

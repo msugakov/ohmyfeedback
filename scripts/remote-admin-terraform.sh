@@ -71,7 +71,7 @@ $sudo chown "$admin_user:$service_group" /ohmyfeedback/secrets
 $sudo chmod 750 /ohmyfeedback/secrets
 $sudo chown "$service_user:$admin_group" /ohmyfeedback/var
 $sudo chmod 755 /ohmyfeedback/dist
-$sudo chown "$service_user:$admin_group" /ohmyfeedback/var/tmp
+$sudo chown "$admin_user:$admin_group" /ohmyfeedback/var/tmp
 $sudo chmod 755 /ohmyfeedback/var/tmp
 
 info "Ensuring service file exists"
@@ -86,7 +86,7 @@ After=network.target
 
 [Service]
 Type=exec
-ExecStart=java -jar -Xmx512m -Xms512m -Duser.timezone=UTC /ohmyfeedback/dist/app-all.jar --http-port 80
+ExecStart=java -jar -Xmx512m -Xms512m -Duser.timezone=UTC /ohmyfeedback/dist/app-all.jar --http-port 80 --https-port 443
 RestartSec=5
 TimeoutStopSec=20
 Restart=always
@@ -96,8 +96,9 @@ WorkingDirectory=/ohmyfeedback
 ProtectProc=invisible
 NoNewPrivileges=true
 ProtectSystem=strict
+ReadWritePaths=/ohmyfeedback/var
 ProtectHome=true
-TemporaryFileSystem=/ohmyfeedback/var/tmp
+TemporaryFileSystem=/ohmyfeedback/var/tmp:noatime,nodev,noexec,nosuid,mode=0777
 PrivateTmp=true
 ProtectClock=true
 ProtectKernelTunables=true

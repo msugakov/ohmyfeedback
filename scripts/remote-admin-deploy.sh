@@ -34,7 +34,7 @@ $sudo systemctl enable ohmyfeedback.service
 
 info "Waiting for the service to boot up"
 i=1
-max_tries=5
+max_tries=10
 while ! curl --fail -sS --connect-timeout 0.5 --max-time 1 http://127.0.0.1:80 ; do
   sleep 1
   ((i++))
