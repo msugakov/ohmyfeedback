@@ -2,9 +2,11 @@
 
 set -euo pipefail
 
-sudo=sudo
+sudo="sudo"
 
-apt_args=("--yes" "--no-install-recommends")
+export DEBIAN_FRONTEND="noninteractive"
+apt_sudo="$sudo --preserve-env=DEBIAN_FRONTEND"
+apt_get="$apt_sudo apt-get --yes --no-install-recommends"
 
 color_green="\033[0;32m"
 color_off="\033[0m"
@@ -19,16 +21,17 @@ function info() {
 
 if [[ ! -a /var/cache/apt/pkgcache.bin ]] || (( "$(stat --format %Y /var/cache/apt/pkgcache.bin)" + 24*3600 < "$(date +%s)" )); then
   info "It seems that the last update was done more than a day ago, updating"
-  $sudo apt-get "${apt_args[@]}" update
-  $sudo apt-get "${apt_args[@]}" upgrade
+  $apt_get update
+  $apt_get upgrade
 else
   info "It seems that the last update is still fresh, skipping update"
 fi
 
 info "Installing JRE and other dependencies, if needed"
-$sudo apt-get "${apt_args[@]}" install \
+$apt_get install \
   openjdk-19-jre-headless \
-  curl
+  curl \
+  net-tools
 
 if curl --fail -sS -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/ > /dev/null ; then
   info "This seems to be an Oracle Cloud instance, making sure firewall HTTP and HTTPS ports are open"
@@ -108,3 +111,5 @@ Environment=TEMP=/ohmyfeedback/var/tmp TMP=/ohmyfeedback/var/tmp
 [Install]
 WantedBy=multi-user.target
 EOF
+
+$sudo systemctl daemon-reload
