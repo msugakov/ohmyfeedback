@@ -83,7 +83,7 @@ fun genSelfSignedCert(): KeyStore {
     val keyStore = buildKeyStore {
         certificate("sampleAlias") {
             password = "foobar"
-            domains = listOf("127.0.0.1", "0.0.0.0", "localhost", "152.70.58.209")
+            domains = listOf("127.0.0.1", "0.0.0.0", "localhost", "ohmyfeedback.net", "ohmyfeedbacks.net")
         }
     }
     keyStore.saveToFile(keyStoreFile, "123456")

@@ -31,7 +31,8 @@ info "Installing JRE and other dependencies, if needed"
 $apt_get install \
   openjdk-19-jre-headless \
   curl \
-  net-tools
+  net-tools \
+  certbot
 
 if curl --fail -sS -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/ > /dev/null ; then
   info "This seems to be an Oracle Cloud instance, making sure firewall HTTP and HTTPS ports are open"
@@ -62,7 +63,7 @@ admin_user="$(id -u)"
 admin_group="$(id -g)"
 
 info "Ensuring service directories and permissions are right"
-$sudo mkdir -p /ohmyfeedback/{dist,secrets,var,var/tmp}
+$sudo mkdir -p /ohmyfeedback/{dist,secrets,var,var/tmp,certbot,certbot/for-java}
 $sudo chown "$admin_user:$service_group" /ohmyfeedback
 $sudo chmod 755 /ohmyfeedback
 $sudo chown "$admin_user:$service_group" /ohmyfeedback/dist
@@ -73,6 +74,10 @@ $sudo chown "$service_user:$admin_group" /ohmyfeedback/var
 $sudo chmod 755 /ohmyfeedback/dist
 $sudo chown "$admin_user:$admin_group" /ohmyfeedback/var/tmp
 $sudo chmod 755 /ohmyfeedback/var/tmp
+$sudo chown "root:$admin_group" /ohmyfeedback/certbot
+$sudo chmod 750 /ohmyfeedback/certbot
+$sudo chown "root:$admin_group" /ohmyfeedback/certbot/for-java
+$sudo chmod 770 /ohmyfeedback/certbot/for-java
 
 info "Ensuring service file exists"
 # https://www.freedesktop.org/software/systemd/man/systemd.unit.html
