@@ -38,7 +38,6 @@ $sudo certbot --standalone \
   -m info@ohmyfeedback.net \
   -d ohmyfeedback.net,ohmyfeedbacks.net \
   -n --agree-tos \
-  --test-cert \
   certonly
 
 info "Converting TLS certificate for Java usage"
