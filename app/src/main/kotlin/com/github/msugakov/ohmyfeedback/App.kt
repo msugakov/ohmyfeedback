@@ -5,6 +5,7 @@ import io.ktor.network.tls.certificates.buildKeyStore
 import io.ktor.network.tls.certificates.saveToFile
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
+import io.ktor.server.application.install
 import io.ktor.server.engine.ApplicationEngineEnvironmentBuilder
 import io.ktor.server.engine.applicationEngineEnvironment
 import io.ktor.server.engine.connector
@@ -15,6 +16,7 @@ import io.ktor.server.http.content.resources
 import io.ktor.server.http.content.static
 import io.ktor.server.http.content.staticBasePackage
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.httpsredirect.HttpsRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
@@ -46,11 +48,12 @@ fun main(args: Array<String>) {
         }
         initSslConnector(this, parsedArgs)
 
-        module(Application::module)
+        module {
+            module(parsedArgs.httpsPort)
+        }
     }
 
     embeddedServer(Netty, environment).start(wait = true)
-    println(App().greeting)
 }
 
 data class CliOptions(val httpPort: Int, val httpsPort: Int, val certKeyStore: String?)
@@ -124,7 +127,11 @@ fun genSelfSignedCert(ksPass: String, keyPass: String, keyAlias: String): KeySto
     return keyStore
 }
 
-fun Application.module() {
+fun Application.module(httpsPort: Int) {
+    install(HttpsRedirect) {
+        sslPort = httpsPort
+        permanentRedirect = false
+    }
     routing {
         get("/") {
             call.respondText("<h1>Hello, Ktor! It's ${Date()}</h1>\n", ContentType.Text.Html)
