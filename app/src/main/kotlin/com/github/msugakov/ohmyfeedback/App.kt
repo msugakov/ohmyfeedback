@@ -5,6 +5,7 @@ import io.ktor.network.tls.certificates.buildKeyStore
 import io.ktor.network.tls.certificates.saveToFile
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
+import io.ktor.server.application.createApplicationPlugin
 import io.ktor.server.application.install
 import io.ktor.server.engine.ApplicationEngineEnvironmentBuilder
 import io.ktor.server.engine.applicationEngineEnvironment
@@ -17,9 +18,12 @@ import io.ktor.server.http.content.static
 import io.ktor.server.http.content.staticBasePackage
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.httpsredirect.HttpsRedirect
+import io.ktor.server.request.host
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import io.ktor.server.util.url
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
@@ -99,14 +103,13 @@ fun initSslConnector(builder: ApplicationEngineEnvironmentBuilder, args: CliOpti
         keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
         FileInputStream(args.certKeyStore).use { fs -> keyStore.load(fs, ksPass.toCharArray()) }
     } else {
-        log.info("Cert keystore is not configured. Will use self-signed certificate.")
+        log.info("Cert keystore is not specified. Will use self-signed certificate.")
         ksPass = "123456"
         keyPass = "foobar"
         keyStore = genSelfSignedCert(ksPass, keyPass, keyAlias)
     }
 
-    builder.sslConnector(
-        keyStore = keyStore,
+    builder.sslConnector(keyStore = keyStore,
         keyAlias = keyAlias,
         keyStorePassword = { ksPass.toCharArray() },
         privateKeyPassword = { keyPass.toCharArray() }) {
@@ -132,6 +135,7 @@ fun Application.module(httpsPort: Int) {
         sslPort = httpsPort
         permanentRedirect = false
     }
+    install(RedirectSingularPlugin)
     routing {
         get("/") {
             call.respondText("<h1>Hello, Ktor! It's ${Date()}</h1>\n", ContentType.Text.Html)
@@ -140,6 +144,16 @@ fun Application.module(httpsPort: Int) {
             staticBasePackage = "static"
             resources(".")
             defaultResource("index.html")
+        }
+    }
+}
+
+val RedirectSingularPlugin = createApplicationPlugin("RedirectSingularPlugin") {
+    onCall { call ->
+        // Inspired by io.ktor.server.plugins.httpsredirect.HttpsRedirect
+        if (call.request.host() == "ohmyfeedbacks.net" && !call.response.isCommitted) {
+            val redirectUrl = call.url { host = "ohmyfeedback.net" }
+            call.respondRedirect(redirectUrl, false)
         }
     }
 }
