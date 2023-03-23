@@ -14,7 +14,7 @@ ssh_args=(
   "-o" "UserKnownHostsFile=${server_keys}"
 )
 
-ssh "${ssh_args[@]}" "$server" 'mkdir -p /ohmyfeedback/deploy'
+ssh "${ssh_args[@]}" "$server" 'sudo mkdir -p /ohmyfeedback && sudo chown "$(id -u):$(id -g)" /ohmyfeedback && mkdir -p /ohmyfeedback/deploy'
 scp "${ssh_args[@]}" "${script_dir}/remote-admin-terraform.sh" "${script_dir}/remote-admin-deploy.sh" "${server}:/ohmyfeedback/deploy/"
 scp "${ssh_args[@]}" "${script_dir}/../app/build/libs/app-all.jar" "${server}:/ohmyfeedback/deploy/" &
 ssh -t "${ssh_args[@]}" "$server" '/ohmyfeedback/deploy/remote-admin-terraform.sh'
