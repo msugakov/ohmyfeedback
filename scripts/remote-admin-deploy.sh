@@ -54,15 +54,15 @@ openssl pkcs12 -export \
   -name "sampleAlias" -passout file:"$java_staging/conversion-pass" </dev/null
 # Remove output .jks file because otherwise keytool will try to append to an existing one.
 rm -vf "$java_staging/keystore.jks"
-openssl rand 48 | openssl enc -nopad -A -base64 > "$java_staging/jks-pass"
+openssl rand 48 | openssl enc -nopad -A -base64 > "$java_staging/keystore.jks-pass"
 keytool -importkeystore \
   -srckeystore "$java_staging/keystore.p12" -srcstoretype pkcs12 \
   -srcstorepass:file "$java_staging/conversion-pass" \
   -destkeystore "$java_staging/keystore.jks" \
-  -deststorepass:file "$java_staging/jks-pass" </dev/null
-chmod 640 "$java_staging/keystore.jks" "$java_staging/jks-pass"
-$sudo chgrp "$service_group" "$java_staging/keystore.jks" "$java_staging/jks-pass"
-mv -v "$java_staging/keystore.jks" "$java_staging/jks-pass" "/ohmyfeedback/secrets"
+  -deststorepass:file "$java_staging/keystore.jks-pass" </dev/null
+chmod 640 "$java_staging/keystore.jks" "$java_staging/keystore.jks-pass"
+$sudo chgrp "$service_group" "$java_staging/keystore.jks" "$java_staging/keystore.jks-pass"
+mv -v "$java_staging/keystore.jks" "$java_staging/keystore.jks-pass" "/ohmyfeedback/secrets"
 
 info "Starting new service"
 $sudo systemctl start ohmyfeedback.service

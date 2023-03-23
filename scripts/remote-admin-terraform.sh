@@ -91,7 +91,11 @@ After=network.target
 
 [Service]
 Type=exec
-ExecStart=java -jar -Xmx512m -Xms512m -Duser.timezone=UTC /ohmyfeedback/dist/app-all.jar --http-port 80 --https-port 443
+ExecStart=java -jar -Xmx512m -Xms512m -Duser.timezone=UTC \
+  /ohmyfeedback/dist/app-all.jar \
+  --http-port 80 \
+  --https-port 443 \
+  --cert-keystore secrets/keystore.jks
 RestartSec=5
 TimeoutStopSec=20
 Restart=always
