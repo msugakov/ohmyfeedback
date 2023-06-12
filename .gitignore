@@ -8,3 +8,6 @@ build/
 
 app/var/
 app/secrets/
+
+scripts/server
+scripts/server-keys
