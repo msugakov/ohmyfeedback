@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 sudo="sudo"
 
 export DEBIAN_FRONTEND="noninteractive"
@@ -19,7 +21,9 @@ function info() {
   echo -e "$(date --iso-8601=seconds) [INFO] ${color_green}$@${color_off}"
 }
 
-if [[ ! -a /var/cache/apt/pkgcache.bin ]] || (( "$(stat --format %Y /var/cache/apt/pkgcache.bin)" + 24*3600 < "$(date +%s)" )); then
+if [[ ! -d /ohmyfeedback \
+  || ! -a /var/cache/apt/pkgcache.bin ]] \
+  || (( "$(stat --format %Y /var/cache/apt/pkgcache.bin)" + 24*3600 < "$(date +%s)" )); then
   info "It seems that the last update was done more than a day ago, updating"
   $apt_get update
   $apt_get upgrade
@@ -27,12 +31,11 @@ else
   info "It seems that the last update is still fresh, skipping update"
 fi
 
-info "Installing JRE and other dependencies, if needed"
+info "Installing rbenv&ruby-build and other dependencies, if needed"
 $apt_get install \
-  openjdk-19-jre-headless \
+  autoconf patch build-essential rustc libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libgmp-dev libncurses5-dev libffi-dev libgdbm6 libgdbm-dev libdb-dev uuid-dev \
   curl \
-  net-tools \
-  certbot
+  net-tools
 
 if curl --fail -sS -H "Authorization: Bearer Oracle" -L http://169.254.169.254/opc/v2/instance/ > /dev/null ; then
   info "This seems to be an Oracle Cloud instance, making sure firewall HTTP and HTTPS ports are open"
@@ -49,11 +52,24 @@ if curl --fail -sS -H "Authorization: Bearer Oracle" -L http://169.254.169.254/o
   fi
 fi
 
+info "Installing rbenv for the admin user"
+if [[ ! -d ~/.rbenv ]]; then \
+  git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+fi
+git -C ~/.rbenv checkout --quiet 38e1fbb08e9d75d708a1ffb75fb9bbe179832ac8
+if [[ ! -d ~/.rbenv/plugins/ruby-build ]]; then \
+  git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+fi
+git -C ~/.rbenv/plugins/ruby-build checkout --quiet 4effe8661b407c939cadb75280aafce6ba449057
+ruby_version="$(cat "${script_dir}"/.ruby-version)"
+info "Installing ruby $ruby_version if needed"
+~/.rbenv/bin/rbenv install --verbose --skip-existing "$ruby_version"
 
 info "Ensuring the service user exists"
 # Note that the home directory is unset. We may need it.
 cat <<EOF | $sudo tee /usr/lib/sysusers.d/ohmyfeedback.conf
-u ohmyfeedback - "OhMyFeedback service user" - -
+#Type  Name          ID  GECOS                       Home directory  Shell
+u      ohmyfeedback  -  "OhMyFeedback service user"  -               -
 EOF
 $sudo systemd-sysusers
 
@@ -63,7 +79,7 @@ admin_user="$(id -u)"
 admin_group="$(id -g)"
 
 info "Ensuring service directories and permissions are right"
-$sudo mkdir -p /ohmyfeedback/{dist,secrets,var,var/tmp,certbot,certbot/for-java}
+$sudo mkdir -p /ohmyfeedback/{dist,secrets,var,var/tmp,ruby-dists,certbot,certbot/for-java}
 $sudo chown "$admin_user:$service_group" /ohmyfeedback
 $sudo chmod 755 /ohmyfeedback
 $sudo chown "$admin_user:$service_group" /ohmyfeedback/dist
@@ -74,10 +90,19 @@ $sudo chown "$service_user:$admin_group" /ohmyfeedback/var
 $sudo chmod 755 /ohmyfeedback/dist
 $sudo chown "$admin_user:$admin_group" /ohmyfeedback/var/tmp
 $sudo chmod 755 /ohmyfeedback/var/tmp
+$sudo chown "$admin_user:$admin_group" /ohmyfeedback/ruby-dists
+$sudo chmod 755 /ohmyfeedback/ruby-dists
 $sudo chown "root:$admin_group" /ohmyfeedback/certbot
 $sudo chmod 750 /ohmyfeedback/certbot
 $sudo chown "root:$admin_group" /ohmyfeedback/certbot/for-java
 $sudo chmod 770 /ohmyfeedback/certbot/for-java
+
+info "Copying ruby for service use"
+rsync --archive --safe-links --del --delete --force --info=stats1 \
+  "$HOME/.rbenv/versions/$ruby_version/" "/ohmyfeedback/ruby-dists/$ruby_version/"
+rm --verbose --force /ohmyfeedback/ruby-new
+ln --verbose --symbolic "/ohmyfeedback/ruby-dists/$ruby_version" /ohmyfeedback/ruby-new
+mv --verbose --no-target-directory /ohmyfeedback/ruby-new /ohmyfeedback/ruby
 
 info "Ensuring service file exists"
 # https://www.freedesktop.org/software/systemd/man/systemd.unit.html
